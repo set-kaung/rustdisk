@@ -1,0 +1,5 @@
+/target
+*.sh
+*.env
+.vscode
+.DS_Store
