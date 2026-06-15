@@ -1,12 +1,16 @@
 stages:
-- build
-
-sast:
-  stage: build
-
+  - build
+  - test
 
 rust-latest:
   stage: build
   image: rust:latest
   script:
     - cargo build --verbose
+
+audit:
+  stage: test
+  image: rust:latest
+  script:
+    - cargo install cargo-audit
+    - cargo audit
