@@ -313,7 +313,7 @@ pub fn print_node(
 
     // checki if we need to show size
     if !options.show_percent_only {
-        output.push_str(&format!("{}", size));
+        output.push_str(&format!(" {}", size));
     }
 
     // checki if we need to show percent also
@@ -325,7 +325,7 @@ pub fn print_node(
         let mut trimmed = percent_str.trim_end_matches('0');
         trimmed = trimmed.trim_end_matches('.');
         if options.show_percent_only {
-            output.push_str(&format!("{}%", trimmed));
+            output.push_str(&format!(" {}%", trimmed));
         } else {
             output.push_str(&format!(" ({}%)", trimmed));
         }
