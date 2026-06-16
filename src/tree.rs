@@ -292,7 +292,12 @@ pub fn print_node(
     };
 
     let name = if n.depth == 0 {
-        n.path.to_str().unwrap().to_string()
+        let path = if n.id == 0 {
+            &fs::canonicalize(&n.path).unwrap()
+        } else {
+            &n.path
+        };
+        path.to_str().unwrap().to_string()
     } else {
         n.path.file_name().unwrap().to_str().unwrap().to_string()
     };
@@ -311,12 +316,12 @@ pub fn print_node(
         left_space = sub_min_from_max!(5, display.len())
     );
 
-    // checki if we need to show size
+    // check if we need to show size
     if !options.show_percent_only {
         output.push_str(&format!(" {}", size));
     }
 
-    // checki if we need to show percent also
+    // check if we need to show percent also
     if !options.show_size_only {
         let size_f64: f64 = size.clone().into();
         let percent = (size_f64 / total_size as f64) * 100.0;

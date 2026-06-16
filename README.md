@@ -42,14 +42,21 @@ Options:
 ## Example
 
 ```
-$ rustdisk ./src --level 2
-2026-06-15 22:11:14.888534 +07:00
+$ ./target/release/rustdisk ./ -l 1
+
+2026-06-16 21:07:06.948412 +00:00
 ----------------------------------
-./src 20.000 KB
-    tree.rs 8.000 KB
-    error.rs 4.000 KB
-    hrsize.rs 4.000 KB
-    main.rs 4.000 KB
+/**/**/**/rustdisk    167.930 MB (100%)
+├── .git    276.000 KB (0.1605%)
+├── target    167.598 MB (99.80228%)
+├── src     24.000 KB (0.01396%)
+├── .vscode      4.000 KB (0.00233%)
+├── Cargo.lock     16.000 KB (0.0093%)
+├── .gitignore      4.000 KB (0.00233%)
+├── .gitlab-ci.yml      4.000 KB (0.00233%)
+├── Cargo.toml      4.000 KB (0.00233%)
+├── README.md      4.000 KB (0.00233%)
+└── install.sh      4.000 KB (0.00233%)
 ```
 
 ## How it works
