@@ -324,8 +324,11 @@ pub fn print_node(
 
         let mut trimmed = percent_str.trim_end_matches('0');
         trimmed = trimmed.trim_end_matches('.');
-
-        output.push_str(&format!(" ({}%)", trimmed));
+        if options.show_percent_only {
+            output.push_str(&format!("{}%", trimmed));
+        } else {
+            output.push_str(&format!(" ({}%)", trimmed));
+        }
     }
 
     println!("{}", output);
