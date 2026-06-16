@@ -4,8 +4,19 @@ use std::os::unix::fs::MetadataExt;
 use std::sync::RwLock;
 use std::{fs, path::PathBuf};
 
+macro_rules! sub_min_from_max {
+    ($a:expr, $b:expr) => {{
+        let a = $a;
+        let b = $b;
+        let max = a.max(b);
+        let min = a.min(b);
+        max - min
+    }};
+}
+
 #[derive(Clone)]
 pub struct Node {
+    id: usize,
     parent: Option<usize>,
     path: PathBuf,
     depth: u8,
@@ -25,12 +36,14 @@ pub struct InfoOptions {
     pub shorten: bool,
     pub max_len: u16,
     pub dir_only: bool,
-    pub show_percent: bool,
+    pub show_percent_only: bool,
+    pub show_size_only: bool,
 }
 
 impl Node {
-    pub fn new(parent: Option<usize>, path: PathBuf, depth: u8, is_dir: bool) -> Self {
+    pub fn new(id: usize, parent: Option<usize>, path: PathBuf, depth: u8, is_dir: bool) -> Self {
         Node {
+            id: id,
             parent: parent,
             children: Vec::new(),
             size: HumanReadableSize(0),
@@ -121,6 +134,7 @@ impl Tree {
 
                         for entry in entries.flatten() {
                             new_children.push(Node::new(
+                                idx,
                                 Some(node_id),
                                 entry.path(),
                                 current_depth + 1,
@@ -180,52 +194,139 @@ fn shorten_name(name: String, max_len: u16) -> String {
     format!("{}…{}", left, right)
 }
 
+struct PrintState {
+    node_idx: usize,
+    is_last_child: bool,
+    ancestor_is_last: Vec<bool>,
+}
+
 pub fn print_entries(entries: &mut Vec<Node>, total_size: u64, options: InfoOptions) {
     entries.sort_by(|a, b| {
         a.depth
             .cmp(&b.depth)
+            .then_with(|| a.children.len().cmp(&b.children.len()).reverse())
             .then_with(|| a.size.cmp(&b.size).reverse())
             .then_with(|| a.path.cmp(&b.path))
     });
 
-    for entry in entries {
-        // skip if directory only mode and entry is not directory
+    let mut stack: Vec<PrintState> = Vec::new();
+
+    let root_indices: Vec<usize> = entries
+        .iter()
+        .enumerate()
+        .filter(|(_, entry)| entry.depth == 0)
+        .map(|(idx, _)| idx)
+        .collect();
+
+    for &idx in root_indices.iter().rev() {
+        stack.push(PrintState {
+            node_idx: idx,
+            is_last_child: true,
+            ancestor_is_last: Vec::new(),
+        });
+    }
+
+    while let Some(state) = stack.pop() {
+        let entry = &entries[state.node_idx];
+
         if options.dir_only && !entry.is_dir {
             continue;
         }
+
         if entry.depth <= options.info_level {
-            let size = &entry.size;
-            let indent = (entry.depth * 4) as usize;
-            let name = if entry.depth == 0 {
-                entry.path.to_str().unwrap().to_string()
-            } else {
-                entry
-                    .path
-                    .file_name()
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-                    .to_string()
-            };
-            let display = if options.shorten {
-                shorten_name(name, options.max_len)
-            } else {
-                name
-            };
-            let mut output = format!(
-                "{:indent_width$}{:name_pad$} {}",
-                "",
-                display,
-                size,
-                indent_width = indent,
-                name_pad = options.max_len as usize
+            print_node(
+                entry,
+                total_size,
+                &options,
+                &state.ancestor_is_last,
+                state.is_last_child,
             );
-            if options.show_percent {
-                let size_f64: f64 = size.into();
-                let percent = (size_f64 / total_size as f64) * 100.0;
-                output.push_str(&format!(" {:.5}%", percent));
-            }
-            println!("{}", output);
+        }
+
+        if entry.depth >= options.info_level {
+            continue;
+        }
+
+        let mut child_ancestors = state.ancestor_is_last.clone();
+        if entry.depth > 0 {
+            child_ancestors.push(state.is_last_child);
+        }
+
+        let children_count = entry.children.len();
+        for (idx, &child_idx) in entry.children.iter().enumerate().rev() {
+            let child_is_last = idx == children_count - 1;
+
+            stack.push(PrintState {
+                node_idx: child_idx,
+                is_last_child: child_is_last,
+                ancestor_is_last: child_ancestors.clone(),
+            });
         }
     }
+}
+
+pub fn print_node(
+    n: &Node,
+    total_size: u64,
+    options: &InfoOptions,
+    ancestor_is_last: &[bool],
+    is_last_child: bool,
+) {
+    let size = &n.size;
+
+    let mut prefix = String::new();
+    for &parent_was_last in ancestor_is_last {
+        if parent_was_last {
+            prefix.push_str("    ");
+        } else {
+            prefix.push_str("│   ");
+        }
+    }
+
+    let connector = if n.depth == 0 {
+        ""
+    } else if is_last_child {
+        "└── "
+    } else {
+        "├── "
+    };
+
+    let name = if n.depth == 0 {
+        n.path.to_str().unwrap().to_string()
+    } else {
+        n.path.file_name().unwrap().to_str().unwrap().to_string()
+    };
+
+    let display = if options.shorten {
+        shorten_name(name, options.max_len)
+    } else {
+        name
+    };
+
+    let mut output = format!(
+        "{}{}{:<left_space$}",
+        prefix,
+        connector,
+        display,
+        left_space = sub_min_from_max!(5, display.len())
+    );
+
+    // checki if we need to show size
+    if !options.show_percent_only {
+        output.push_str(&format!("{}", size));
+    }
+
+    // checki if we need to show percent also
+    if !options.show_size_only {
+        let size_f64: f64 = size.clone().into();
+        let percent = (size_f64 / total_size as f64) * 100.0;
+        let percent_str = format!("{:.5}", percent);
+
+        let mut trimmed = percent_str.trim_end_matches('0');
+        trimmed = trimmed.trim_end_matches('.');
+
+        output.push_str(&format!(" ({}%)", trimmed));
+    }
+
+    println!("{}", output);
 }

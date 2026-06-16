@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 mod tree;
 use std::path::PathBuf;
 mod hrsize;
@@ -34,23 +34,36 @@ struct Args {
     dir_only: bool,
 
     #[arg(long, default_value_t = false, help = "Show percent of whole")]
-    show_percent: bool,
+    show_percent_only: bool,
+
+    #[arg(long, default_value_t = false, help = "Show storage size")]
+    show_size_only: bool,
+
+    #[arg(long, value_enum, help = "Generate shell completions")]
+    generate_completions: Option<clap_complete::Shell>,
 }
 
 fn main() {
     let args = Args::parse();
+    if let Some(shell) = args.generate_completions {
+        let mut cmd = Args::command();
+        clap_complete::generate(shell, &mut cmd, "rustdisk", &mut std::io::stdout());
+        return;
+    }
+
     let target_path = PathBuf::from(&args.path);
     if !target_path.is_dir() {
         eprintln!("error: {} is not a direcotry.", args.path.display());
         std::process::exit(1);
     }
-    let mut tree = Tree::new(Some(Node::new(None, target_path.clone(), 0, true)));
+    let mut tree = Tree::new(Some(Node::new(0, None, target_path.clone(), 0, true)));
     let options = InfoOptions {
         info_level: args.level,
         shorten: args.shorten,
         max_len: args.width,
         dir_only: args.dir_only,
-        show_percent: args.show_percent,
+        show_percent_only: args.show_percent_only,
+        show_size_only: args.show_size_only,
     };
     match tree.build() {
         Ok(()) => {

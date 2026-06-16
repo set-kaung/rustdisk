@@ -7,7 +7,7 @@ Further options to sort with different fields is planned. Parallelisation with r
 
 ```bash
 cargo build --release
-./target/release/rustdisk [PATH] [OPTIONS]
+./target/release/rustdisk [OPTIONS] [PATH]
 ```
 
 ## Usage
@@ -19,13 +19,24 @@ Arguments:
   [PATH]  The target directory path [default: ./]
 
 Options:
-  -l, --level <LEVEL>  How much depth to show. [default: 5]
-      --shorten        Shorten the output, control with width option
-  -w, --width <WIDTH>  Length to print out the file/dir name. [default: 20]
-  -d, --dir-only       Show directories only
-      --show-percent   Show percent of whole
-  -h, --help           Print help
-  -V, --version        Print version
+  -l, --level <LEVEL>
+          How much depth to show. [default: 5]
+      --shorten
+          Shorten the output, control with width option
+  -w, --width <WIDTH>
+          Length to print out the file/dir name. [default: 20]
+  -d, --dir-only
+          Show directories only
+      --show-percent-only
+          Show percent of whole
+      --show-size-only
+          Show storage size
+      --generate-completions <GENERATE_COMPLETIONS>
+          Generate shell completions [possible values: bash, elvish, fish, powershell, zsh]
+  -h, --help
+          Print help
+  -V, --version
+          Print version
 ```
 
 ## Example
@@ -44,5 +55,7 @@ $ rustdisk ./src --level 2
 ## How it works
 
 Walks the directory tree iteratively with a stack. Each node accumulates its children's sizes on the way up. Output is sorted by depth then size descending.
+
+Show size and percent by defautl but configurable.
 
 Symlinks are not followed.
