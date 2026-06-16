@@ -2,7 +2,7 @@ use clap::Parser;
 mod tree;
 use std::path::PathBuf;
 mod hrsize;
-use crate::tree::{Node, Tree, print_entries};
+use crate::tree::{InfoOptions, Node, Tree, print_entries};
 mod error;
 use chrono::Local;
 
@@ -16,7 +16,6 @@ struct Args {
     level: u8,
 
     #[arg(
-        short,
         long,
         default_value_t = false,
         help = "Shorten the output, control with width option"
@@ -29,10 +28,13 @@ struct Args {
         default_value_t = 20,
         help = "Length to print out the file/dir name."
     )]
-    width: u8,
+    width: u16,
 
     #[arg(short, long, default_value_t = false, help = "Show directories only")]
     dir_only: bool,
+
+    #[arg(long, default_value_t = false, help = "Show percent of whole")]
+    show_percent: bool,
 }
 
 fn main() {
@@ -43,20 +45,20 @@ fn main() {
         std::process::exit(1);
     }
     let mut tree = Tree::new(Some(Node::new(None, target_path.clone(), 0, true)));
-
+    let options = InfoOptions {
+        info_level: args.level,
+        shorten: args.shorten,
+        max_len: args.width,
+        dir_only: args.dir_only,
+        show_percent: args.show_percent,
+    };
     match tree.build() {
         Ok(()) => {
             let now = Local::now();
             let time_str = format!("{}", now);
             let dashes = "-".repeat(time_str.len() + 1);
-            println!("{}\n{}", time_str, dashes);
-            print_entries(
-                &mut tree.nodes(),
-                args.level,
-                args.shorten,
-                args.width,
-                args.dir_only,
-            );
+            println!("\n{}\n{}", time_str, dashes);
+            print_entries(&mut tree.nodes(), tree.total_size.into(), options);
         }
         Err(e) => match e {
             error::AppError::NotFound => {

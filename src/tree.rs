@@ -20,6 +20,14 @@ pub struct Tree {
     pub total_size: HumanReadableSize,
 }
 
+pub struct InfoOptions {
+    pub info_level: u8,
+    pub shorten: bool,
+    pub max_len: u16,
+    pub dir_only: bool,
+    pub show_percent: bool,
+}
+
 impl Node {
     pub fn new(parent: Option<usize>, path: PathBuf, depth: u8, is_dir: bool) -> Self {
         Node {
@@ -137,6 +145,10 @@ impl Tree {
         }
     }
 
+    //     fn post_process(&self) -> Result<(),AppError>{
+
+    // }
+
     fn bubble_up_size(&mut self, node_id: usize, size: u64) {
         let mut current_id = node_id;
 
@@ -156,7 +168,7 @@ impl Tree {
     }
 }
 
-fn shorten_name(name: String, max_len: u8) -> String {
+fn shorten_name(name: String, max_len: u16) -> String {
     let max = max_len as usize;
     let chars: Vec<char> = name.chars().collect();
     if chars.len() <= max {
@@ -168,13 +180,7 @@ fn shorten_name(name: String, max_len: u8) -> String {
     format!("{}…{}", left, right)
 }
 
-pub fn print_entries(
-    entries: &mut Vec<Node>,
-    info_level: u8,
-    shorten: bool,
-    max_len: u8,
-    dir_only: bool,
-) {
+pub fn print_entries(entries: &mut Vec<Node>, total_size: u64, options: InfoOptions) {
     entries.sort_by(|a, b| {
         a.depth
             .cmp(&b.depth)
@@ -184,10 +190,10 @@ pub fn print_entries(
 
     for entry in entries {
         // skip if directory only mode and entry is not directory
-        if dir_only && !entry.is_dir {
+        if options.dir_only && !entry.is_dir {
             continue;
         }
-        if entry.depth < info_level {
+        if entry.depth <= options.info_level {
             let size = &entry.size;
             let indent = (entry.depth * 4) as usize;
             let name = if entry.depth == 0 {
@@ -201,12 +207,25 @@ pub fn print_entries(
                     .unwrap()
                     .to_string()
             };
-            let display = if shorten {
-                shorten_name(name, max_len)
+            let display = if options.shorten {
+                shorten_name(name, options.max_len)
             } else {
                 name
             };
-            println!("{:width$}{} {}", "", display, size, width = indent);
+            let mut output = format!(
+                "{:indent_width$}{:name_pad$} {}",
+                "",
+                display,
+                size,
+                indent_width = indent,
+                name_pad = options.max_len as usize
+            );
+            if options.show_percent {
+                let size_f64: f64 = size.into();
+                let percent = (size_f64 / total_size as f64) * 100.0;
+                output.push_str(&format!(" {:.5}%", percent));
+            }
+            println!("{}", output);
         }
     }
 }
