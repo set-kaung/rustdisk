@@ -20,9 +20,10 @@ Arguments:
 
 Options:
   -l, --level <LEVEL>  How much depth to show. [default: 5]
-  -s, --shorten        Shorten the output, control with width option
+      --shorten        Shorten the output, control with width option
   -w, --width <WIDTH>  Length to print out the file/dir name. [default: 20]
   -d, --dir-only       Show directories only
+      --show-percent   Show percent of whole
   -h, --help           Print help
   -V, --version        Print version
 ```
