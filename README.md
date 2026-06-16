@@ -59,3 +59,17 @@ Walks the directory tree iteratively with a stack. Each node accumulates its chi
 Show size and percent by defautl but configurable.
 
 Symlinks are not followed.
+
+## Tab Completion Gneration
+
+You can generate tab completion for options using `--generate-completions`.
+Support zsh, bash, elvish, fish, and powershell.
+
+For example, in zsh,
+
+```bash
+rustdisk --generate-completions=zsh > ~/.zsh/completions/_rustdisk
+```
+
+You may need to include ~/.zsh/completions in your FPATH for zsh. [more on FPATH](https://zsh.sourceforge.io/Doc/Release/Functions.html)
+Consult your shell documetaion for tab completion functionalities.
