@@ -153,6 +153,20 @@ impl Tree {
                     }
                 }
             }
+            let mut nodes = self.nodes.write().unwrap();
+            for i in 0..nodes.len() {
+                let mut children = nodes[i].children.clone();
+                children.sort_by(|&a, &b| {
+                    nodes[a]
+                        .children
+                        .len()
+                        .cmp(&nodes[b].children.len())
+                        .reverse()
+                        .then_with(|| nodes[b].size.cmp(&nodes[a].size))
+                        .then_with(|| nodes[a].path.cmp(&nodes[b].path))
+                });
+                nodes[i].children = children;
+            }
             Ok(total_size)
         } else {
             Ok(0)
@@ -201,14 +215,6 @@ struct PrintState {
 }
 
 pub fn print_entries(entries: &mut Vec<Node>, total_size: u64, options: InfoOptions) {
-    entries.sort_by(|a, b| {
-        a.depth
-            .cmp(&b.depth)
-            .then_with(|| a.children.len().cmp(&b.children.len()).reverse())
-            .then_with(|| a.size.cmp(&b.size).reverse())
-            .then_with(|| a.path.cmp(&b.path))
-    });
-
     let mut stack: Vec<PrintState> = Vec::new();
 
     let root_indices: Vec<usize> = entries
