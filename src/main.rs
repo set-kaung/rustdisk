@@ -41,6 +41,9 @@ struct Args {
 
     #[arg(long, value_enum, help = "Generate shell completions")]
     generate_completions: Option<clap_complete::Shell>,
+
+    #[arg(long, default_value = "")]
+    filter_prefix: String,
 }
 
 fn main() {
@@ -50,6 +53,15 @@ fn main() {
         clap_complete::generate(shell, &mut cmd, "rustdisk", &mut std::io::stdout());
         return;
     }
+
+    let prefix_filters = if !args.filter_prefix.trim().is_empty() {
+        args.filter_prefix
+            .split(" ")
+            .map(|x| x.to_string())
+            .collect()
+    } else {
+        Vec::new()
+    };
 
     let target_path = PathBuf::from(&args.path);
     if !target_path.is_dir() {
@@ -64,6 +76,7 @@ fn main() {
         dir_only: args.dir_only,
         show_percent_only: args.show_percent_only,
         show_size_only: args.show_size_only,
+        prefix_filters: prefix_filters,
     };
     match tree.build() {
         Ok(()) => {

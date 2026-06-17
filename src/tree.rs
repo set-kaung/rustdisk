@@ -38,6 +38,7 @@ pub struct InfoOptions {
     pub dir_only: bool,
     pub show_percent_only: bool,
     pub show_size_only: bool,
+    pub prefix_filters: Vec<String>,
 }
 
 impl Node {
@@ -298,11 +299,7 @@ pub fn print_node(
     };
 
     let name = if n.depth == 0 {
-        let path = if n.id == 0 {
-            &fs::canonicalize(&n.path).unwrap()
-        } else {
-            &n.path
-        };
+        let path = &fs::canonicalize(&n.path).unwrap();
         path.to_str().unwrap().to_string()
     } else {
         n.path.file_name().unwrap().to_str().unwrap().to_string()
