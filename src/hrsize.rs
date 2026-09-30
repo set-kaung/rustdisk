@@ -1,4 +1,6 @@
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+use std::ops::Add;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct HumanReadableSize(pub u64);
 
 fn convert(size: u64) -> String {
@@ -48,5 +50,13 @@ impl From<u64> for HumanReadableSize {
 impl From<&HumanReadableSize> for f64 {
     fn from(hr: &HumanReadableSize) -> Self {
         hr.0 as f64
+    }
+}
+
+impl Add<u64> for HumanReadableSize {
+    type Output = u64;
+
+    fn add(self, rhs: u64) -> Self::Output {
+        self.0 + rhs
     }
 }

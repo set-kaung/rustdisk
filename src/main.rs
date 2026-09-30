@@ -1,10 +1,15 @@
-use clap::{CommandFactory, Parser};
-mod tree;
 use std::path::PathBuf;
-mod hrsize;
-use crate::tree::{InfoOptions, Node, Tree, print_entries};
-mod error;
-use chrono::Local;
+
+use clap::{CommandFactory, Parser};
+
+use crate::tree::{
+    Tree,
+    printer::{InfoOptions, print_entries},
+};
+
+pub mod error;
+pub mod hrsize;
+mod tree;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -13,7 +18,7 @@ struct Args {
     path: std::path::PathBuf,
 
     #[arg(short, long, default_value_t = 5, help = "How much depth to show.")]
-    level: u8,
+    level: u16,
 
     #[arg(
         long,
@@ -62,36 +67,24 @@ fn main() {
     } else {
         Vec::new()
     };
-
-    let target_path = PathBuf::from(&args.path);
-    if !target_path.is_dir() {
-        eprintln!("error: {} is not a direcotry.", args.path.display());
-        std::process::exit(1);
-    }
-    let mut tree = Tree::new(Some(Node::new(0, None, target_path.clone(), 0, true)));
     let options = InfoOptions {
-        info_level: args.level,
+        depth_level: args.level,
         shorten: args.shorten,
         max_len: args.width,
         dir_only: args.dir_only,
         show_percent_only: args.show_percent_only,
         show_size_only: args.show_size_only,
         prefix_filters: prefix_filters,
+        sort_by_size: true,
     };
-    match tree.build() {
-        Ok(()) => {
-            let now = Local::now();
-            let time_str = format!("{}", now);
-            let dashes = "-".repeat(time_str.len() + 1);
-            println!("\n{}\n{}", time_str, dashes);
-            print_entries(&mut tree.nodes(), tree.total_size.into(), options);
-        }
-        Err(e) => match e {
-            error::AppError::NotFound => {
-                eprintln!("path not found: {}", target_path.display())
-            }
-            error::AppError::AccessDenied => eprintln!("access denied: {}", target_path.display()),
-            error::AppError::Fatal(s) => eprintln!("unrecoverable error: {}", s),
-        },
+
+    let target_path = PathBuf::from(&args.path);
+    if !target_path.is_dir() {
+        eprintln!("error: {} is not a direcotry.", args.path.display());
+        std::process::exit(1);
+    }
+    match Tree::new(target_path) {
+        Ok(mut v) => print_entries(&mut v.root, options),
+        Err(e) => eprintln!("{e}"),
     }
 }
