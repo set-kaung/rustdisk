@@ -1,4 +1,4 @@
-use crate::tree::node::Node;
+use crate::tree::node::{Node, NodeType};
 
 pub struct InfoOptions {
     pub depth_level: u16,
@@ -20,7 +20,9 @@ pub fn print_entries(node: &mut Node, options: InfoOptions) {
     stack.append(&mut node.children);
 
     while let Some(mut child) = stack.pop() {
-        if child.depth <= options.depth_level {
+        if child.depth <= options.depth_level
+            && (!options.dir_only || matches!(child.node_type, NodeType::Directory))
+        {
             let mut p = child.path.to_str().unwrap().to_string();
             if options.shorten {
                 p = shorten_name(p, options.max_len);
@@ -35,7 +37,7 @@ pub fn print_entries(node: &mut Node, options: InfoOptions) {
         stack.append(&mut child.children);
     }
     let p = node.path.to_str().unwrap().to_string();
-    println!("{} {}", node.size, p);
+    println!("\n{} {}", node.size, p);
 }
 
 fn shorten_name(name: String, max_len: u16) -> String {
