@@ -12,14 +12,13 @@ pub struct InfoOptions {
 }
 
 pub fn print_entries(node: &mut Node, options: InfoOptions) {
-    let mut stack = Vec::new();
-    let p = node.path.to_str().unwrap();
-    println!("{} {}", node.size, p);
+    let mut stack: Vec<Node> = Vec::new();
     if options.sort_by_size {
-        node.children.sort_by(|a, b| a.size.cmp(&b.size));
+        node.children.sort_by(|a, b| a.size.cmp(&b.size).reverse());
         node.children.reverse();
     }
     stack.append(&mut node.children);
+
     while let Some(mut child) = stack.pop() {
         if child.depth <= options.depth_level {
             let mut p = child.path.to_str().unwrap().to_string();
@@ -28,8 +27,15 @@ pub fn print_entries(node: &mut Node, options: InfoOptions) {
             }
             println!("{} {}", child.size, p);
         }
+
+        if options.sort_by_size {
+            child.children.sort_by(|a, b| a.size.cmp(&b.size).reverse());
+            child.children.reverse();
+        }
         stack.append(&mut child.children);
     }
+    let p = node.path.to_str().unwrap().to_string();
+    println!("{} {}", node.size, p);
 }
 
 fn shorten_name(name: String, max_len: u16) -> String {
